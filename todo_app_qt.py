@@ -16,15 +16,17 @@ class TodoAppQt(QMainWindow):
             os.makedirs(data_dir)
         self.db = DatabaseManager(os.path.join(data_dir, "todos.db"))
 
+        # 主窗口
+        self.main_window = MainWindowQt(self, self.db, None)  # 先创建主窗口
+        self.setCentralWidget(self.main_window)
+        
         # 托盘图标
         self.tray_icon = TrayIconQt(self)
         self.tray_icon.show()
-
-        # 主窗口
-        self.main_window = MainWindowQt(self, self.db, self.tray_icon)
-        self.setCentralWidget(self.main_window)
+        self.main_window.tray_icon = self.tray_icon  # 设置托盘图标
         self.tray_icon.set_show_window_callback(self.show_window)
 
     def show_window(self):
         self.showNormal()
         self.activateWindow()
+        self.raise_()  # 将窗口提升到最前
