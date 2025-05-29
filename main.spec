@@ -5,7 +5,7 @@ a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=[('ui/todo.ico', 'ui/')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

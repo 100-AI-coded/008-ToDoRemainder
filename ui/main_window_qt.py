@@ -3,11 +3,21 @@ from PyQt5.QtWidgets import (
     QTableWidget, QTableWidgetItem, QMessageBox, QComboBox, QDialog, QApplication,
     QFrame, QHeaderView, QSpinBox, QSystemTrayIcon
 )
-from PyQt5.QtCore import Qt, QDateTime, QTimer
+from PyQt5.QtCore import Qt, QDateTime, QTimer, QUrl
 from PyQt5.QtGui import QColor, QKeySequence, QFont, QPalette, QIcon, QCursor
 from PyQt5.QtWidgets import QShortcut
 import datetime
-from .todo_dialog import TodoDialog
+import webbrowser
+import os
+import sys
+
+# 添加项目根目录到系统路径
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+if parent_dir not in sys.path:
+    sys.path.append(parent_dir)
+
+from ui.todo_dialog import TodoDialog
 from config import Config
 
 class MainWindowQt(QWidget):
@@ -17,13 +27,16 @@ class MainWindowQt(QWidget):
         self.tray_icon = tray_icon
         self.show_completed = False
         self.config = Config()
+        
         self.init_ui()
         self.load_todos()
         self.setup_shortcuts()
         self.setup_styles()
         self.setup_reminder_timer()
-        # 延迟居中窗口，确保窗口大小已计算完成
-        QTimer.singleShot(200, self.center_window)
+
+    def show_help(self):
+        """显示帮助信息"""
+        webbrowser.open("https://github.com/100-AI-coded/008-ToDoRemainder")
 
     def setup_reminder_timer(self):
         """设置提醒定时器"""
@@ -77,7 +90,7 @@ class MainWindowQt(QWidget):
         self.setStyleSheet("""
             QWidget {
                 font-family: "Microsoft YaHei", "微软雅黑";
-                font-size: 12px;
+                font-size: 14px;
             }
             QPushButton {
                 background-color: #4a90e2;
@@ -86,6 +99,7 @@ class MainWindowQt(QWidget):
                 padding: 5px 15px;
                 border-radius: 3px;
                 min-width: 80px;
+                font-size: 14px;
             }
             QPushButton:hover {
                 background-color: #357abd;
@@ -97,6 +111,7 @@ class MainWindowQt(QWidget):
                 padding: 5px;
                 border: 1px solid #ddd;
                 border-radius: 3px;
+                font-size: 14px;
             }
             QLineEdit:focus {
                 border: 1px solid #4a90e2;
@@ -106,6 +121,7 @@ class MainWindowQt(QWidget):
                 border: 1px solid #ddd;
                 border-radius: 3px;
                 min-width: 100px;
+                font-size: 14px;
             }
             QComboBox:focus {
                 border: 1px solid #4a90e2;
@@ -130,6 +146,12 @@ class MainWindowQt(QWidget):
                 border-bottom: 1px solid #ddd;
                 font-size: 14px;
                 font-weight: bold;
+            }
+            QLabel {
+                font-size: 14px;
+            }
+            QSpinBox {
+                font-size: 14px;
             }
         """)
 
@@ -171,29 +193,36 @@ class MainWindowQt(QWidget):
         layout.setSpacing(10)
         layout.setContentsMargins(15, 15, 15, 15)
         
+        # 设置窗口最小大小
+        self.setMinimumSize(800, 600)
+        
         # 顶部操作区
         top_frame = QFrame()
         top_frame.setFrameStyle(QFrame.StyledPanel)
-        top_layout = QHBoxLayout(top_frame)
-        top_layout.setSpacing(10)
-        
-        # 搜索区域
-        search_layout = QHBoxLayout()
-        search_layout.setSpacing(5)
+        top_layout = QVBoxLayout(top_frame)
+        top_layout.setSpacing(5)
+        top_layout.setContentsMargins(0, 0, 0, 0)
+
+        # 第一行：搜索相关
+        search_row = QHBoxLayout()
+        search_row.setSpacing(8)
+        search_label = QLabel("搜索:")
         self.search_edit = QLineEdit()
         self.search_edit.setPlaceholderText("输入关键字搜索...")
         self.search_edit.returnPressed.connect(self.search_todos)
-        self.search_edit.setMinimumWidth(200)
-        search_layout.addWidget(QLabel("搜索:"))
-        search_layout.addWidget(self.search_edit)
         search_btn = QPushButton("搜索")
+        search_btn.setFixedWidth(60)
         search_btn.clicked.connect(self.search_todos)
-        search_layout.addWidget(search_btn)
-        top_layout.addLayout(search_layout)
+        search_row.addWidget(search_label)
+        search_row.addWidget(self.search_edit, 1)
+        search_row.addWidget(search_btn)
+        search_row.addStretch()
+        top_layout.addLayout(search_row)
 
-        # 排序区域
-        sort_layout = QHBoxLayout()
-        sort_layout.setSpacing(5)
+        # 第二行：排序、提醒间隔、按钮、帮助
+        op_row = QHBoxLayout()
+        op_row.setSpacing(8)
+        sort_label = QLabel("排序:")
         self.sort_combo = QComboBox()
         self.sort_map = {
             "到期时间": "due_date",
@@ -201,36 +230,50 @@ class MainWindowQt(QWidget):
             "创建时间": "created_at"
         }
         self.sort_combo.addItems(list(self.sort_map.keys()))
-        sort_layout.addWidget(QLabel("排序:"))
-        sort_layout.addWidget(self.sort_combo)
         self.sort_combo.currentIndexChanged.connect(self.load_todos)
-        top_layout.addLayout(sort_layout)
+        op_row.addWidget(sort_label)
+        op_row.addWidget(self.sort_combo)
 
-        # 提醒间隔设置
-        reminder_layout = QHBoxLayout()
-        reminder_layout.setSpacing(5)
+        reminder_label = QLabel("提醒间隔:")
         self.reminder_spin = QSpinBox()
-        self.reminder_spin.setRange(1, 1440)  # 1分钟到24小时
+        self.reminder_spin.setRange(1, 1440)
         self.reminder_spin.setValue(self.config.get_reminder_interval())
         self.reminder_spin.setSuffix(" 分钟")
-        self.reminder_spin.valueChanged.connect(self.update_reminder_interval)
-        reminder_layout.addWidget(QLabel("提醒间隔:"))
-        reminder_layout.addWidget(self.reminder_spin)
-        top_layout.addLayout(reminder_layout)
+        self.reminder_spin.editingFinished.connect(self.update_reminder_interval)
+        op_row.addWidget(reminder_label)
+        op_row.addWidget(self.reminder_spin)
 
-        # 操作按钮区域
-        button_layout = QHBoxLayout()
-        button_layout.setSpacing(10)
         add_btn = QPushButton("添加新待办")
-        add_btn.setIcon(QIcon("ui/add.png"))  # 如果有图标的话
+        add_btn.setIcon(QIcon("ui/add.png"))
         add_btn.clicked.connect(self.add_todo_dialog)
-        button_layout.addWidget(add_btn)
-        
+        op_row.addWidget(add_btn)
+
         self.toggle_btn = QPushButton("显示已完成事项")
         self.toggle_btn.clicked.connect(self.toggle_completed)
-        button_layout.addWidget(self.toggle_btn)
-        top_layout.addLayout(button_layout)
-        
+        op_row.addWidget(self.toggle_btn)
+
+        op_row.addStretch()
+        help_btn = QPushButton("?")
+        help_btn.setFixedSize(16, 16)
+        help_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #4a90e2;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-weight: bold;
+                font-size: 12px;
+                font-family: 'Microsoft YaHei', '微软雅黑';
+                padding: 0;
+            }
+            QPushButton:hover {
+                background-color: #357abd;
+            }
+        """)
+        help_btn.clicked.connect(self.show_help)
+        op_row.addWidget(help_btn)
+
+        top_layout.addLayout(op_row)
         layout.addWidget(top_frame)
 
         # 表格区域
@@ -269,14 +312,44 @@ class MainWindowQt(QWidget):
         del_btn = QPushButton("删除")
         del_btn.setIcon(QIcon("ui/delete.png"))  # 如果有图标的话
         del_btn.clicked.connect(self.delete_selected)
+        del_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #dc3545;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                font-weight: bold;
+                font-size: 14px;
+            }
+            QPushButton:hover {
+                background-color: #b52a37;
+            }
+        """)
         bottom_layout.addWidget(del_btn)
         
         self.mark_btn = QPushButton("标记完成")
         self.mark_btn.setIcon(QIcon("ui/complete.png"))  # 如果有图标的话
         self.mark_btn.clicked.connect(self.toggle_completed_status)
+        self.mark_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #28a745;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                font-weight: bold;
+                font-size: 14px;
+            }
+            QPushButton:hover {
+                background-color: #218838;
+            }
+        """)
         bottom_layout.addWidget(self.mark_btn)
         
         layout.addWidget(bottom_frame)
+        
+        # 调整窗口大小并居中显示
+        self.resize(800, 600)
+        self.center_window()
 
     def _get_todo_status(self, todo, now):
         """获取待办事项状态"""
@@ -310,12 +383,12 @@ class MainWindowQt(QWidget):
         # 设置字体
         font = QFont()
         font.setBold(True)
-        font.setPointSize(10)  # 设置字体大小为10pt
+        font.setPointSize(12)  # 设置字体大小为12pt
         title_item.setFont(font)
         
         # 设置其他单元格字体
         normal_font = QFont()
-        normal_font.setPointSize(10)  # 设置字体大小为10pt
+        normal_font.setPointSize(12)  # 设置字体大小为12pt
         desc_item.setFont(normal_font)
         due_item.setFont(normal_font)
         status_item.setFont(normal_font)
@@ -472,7 +545,8 @@ class MainWindowQt(QWidget):
                 "程序已最小化到托盘，可在托盘区恢复窗口。"
             )
 
-    def update_reminder_interval(self, minutes):
+    def update_reminder_interval(self):
         """更新提醒间隔"""
+        minutes = self.reminder_spin.value()
         self.config.set_reminder_interval(minutes)
         QMessageBox.information(self, "设置已保存", f"提醒间隔已设置为 {minutes} 分钟")

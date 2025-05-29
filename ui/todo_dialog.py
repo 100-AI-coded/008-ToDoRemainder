@@ -2,16 +2,50 @@ from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QLineEdit,
     QLabel, QTextEdit, QDateTimeEdit, QFrame
 )
-from PyQt5.QtCore import QDateTime, Qt
+from PyQt5.QtCore import QDateTime, Qt, QTimer
 from PyQt5.QtGui import QFont, QIcon
+import webbrowser
 
 class TodoDialog(QDialog):
     def __init__(self, parent=None, title="", description="", due_date=None):
         super().__init__(parent)
         self.setWindowTitle("待办事项")
         self.setMinimumWidth(400)
+        
         self.setup_styles()
         self.init_ui(title, description, due_date)
+        
+        # 添加帮助按钮
+        self.help_button = QPushButton("?", self)
+        self.help_button.setFixedSize(20, 20)
+        self.help_button.clicked.connect(self.show_help)
+        self.help_button.setStyleSheet("""
+            QPushButton {
+                background-color: #4a90e2;
+                color: white;
+                border: none;
+                border-radius: 10px;
+                font-weight: bold;
+                font-size: 14px;
+                font-family: "Microsoft YaHei", "微软雅黑";
+            }
+            QPushButton:hover {
+                background-color: #357abd;
+            }
+        """)
+        
+        # 延迟设置帮助按钮位置
+        QTimer.singleShot(200, lambda: self.help_button.move(self.width() - 30, 10))
+
+    def show_help(self):
+        """显示帮助信息"""
+        webbrowser.open("https://github.com/100-AI-coded/008-ToDoRemainder")
+
+    def resizeEvent(self, event):
+        """重写调整大小事件，保持帮助按钮位置"""
+        super().resizeEvent(event)
+        if hasattr(self, 'help_button'):
+            self.help_button.move(self.width() - 30, 10)
 
     def setup_styles(self):
         """设置对话框样式"""
