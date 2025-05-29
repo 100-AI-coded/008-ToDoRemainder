@@ -186,6 +186,11 @@ class MainWindowQt(QWidget):
         self.add_shortcut = QShortcut(QKeySequence("Alt+N"), self)
         self.add_shortcut.activated.connect(self.add_todo_dialog)
         self.add_shortcut.setContext(Qt.ApplicationShortcut)
+        
+        # 添加删除快捷键
+        self.delete_shortcut = QShortcut(QKeySequence(Qt.Key_Delete), self)
+        self.delete_shortcut.activated.connect(self.delete_selected)
+        self.delete_shortcut.setContext(Qt.WindowShortcut)
 
     def init_ui(self):
         """初始化UI"""
@@ -550,3 +555,13 @@ class MainWindowQt(QWidget):
         minutes = self.reminder_spin.value()
         self.config.set_reminder_interval(minutes)
         QMessageBox.information(self, "设置已保存", f"提醒间隔已设置为 {minutes} 分钟")
+
+    def keyPressEvent(self, event):
+        """处理键盘事件"""
+        if event.key() == Qt.Key_Delete:
+            # 检查是否有选中的行
+            selected_rows = set(item.row() for item in self.table.selectedItems())
+            if selected_rows:
+                self.delete_selected()
+        else:
+            super().keyPressEvent(event)

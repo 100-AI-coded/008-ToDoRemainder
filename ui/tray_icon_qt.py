@@ -6,9 +6,17 @@ import os
 import sys
 import winreg
 
+def resource_path(relative_path):
+    """获取资源文件的绝对路径，兼容PyInstaller打包后和开发环境"""
+    if hasattr(sys, '_MEIPASS'):
+        base_path = sys._MEIPASS
+    else:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
 class TrayIconQt(QSystemTrayIcon):
     def __init__(self, parent):
-        super().__init__(QIcon("ui/todo.ico"), parent)
+        super().__init__(QIcon(resource_path("ui/todo.ico")), parent)
         self.parent = parent
         self.show_window_callback = None
         self.init_ui()
@@ -112,7 +120,7 @@ class TrayIconQt(QSystemTrayIcon):
         painter = QPainter(pixmap)
         
         # 绘制基础图标
-        icon = QIcon("ui/todo.ico")
+        icon = QIcon(resource_path("ui/todo.ico"))
         icon_pix = icon.pixmap(64, 64)
         painter.drawPixmap(0, 0, icon_pix)
         

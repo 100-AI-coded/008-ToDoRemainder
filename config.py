@@ -1,9 +1,10 @@
 import json
 import os
+from utils import get_app_data_dir
 
 class Config:
     def __init__(self):
-        self.config_file = "config.json"
+        self.config_file = os.path.join(get_app_data_dir(), "config.json")
         self.default_config = {
             "reminder_interval": 30,  # 提醒间隔（分钟）
             "last_reminder_time": None  # 上次提醒时间
