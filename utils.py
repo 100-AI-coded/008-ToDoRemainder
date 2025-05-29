@@ -1,15 +1,11 @@
 import os
 import win32gui
 import win32con
-import win32api
-import winerror
-import sys
-import win32event
-import win32process
-import win32ts
-import time
 import msvcrt
 import tempfile
+import win32process
+import win32api
+import time
 
 def get_app_data_dir():
     """获取应用程序数据目录"""
@@ -20,6 +16,19 @@ def get_app_data_dir():
     if not os.path.exists(app_data_dir):
         os.makedirs(app_data_dir)
     return app_data_dir
+
+def find_running_window():
+    """查找已经运行的程序窗口"""
+    def callback(hwnd, windows):
+        if win32gui.IsWindowVisible(hwnd):
+            title = win32gui.GetWindowText(hwnd)
+            if "待办事项提醒" in title:
+                windows.append(hwnd)
+        return True
+
+    windows = []
+    win32gui.EnumWindows(callback, windows)
+    return windows
 
 def is_already_running():
     """检查程序是否已经运行"""
@@ -38,25 +47,39 @@ def is_already_running():
     except IOError:
         # 如果无法获取锁，说明程序已经在运行
         try:
-            # 尝试查找已存在的窗口
-            def callback(hwnd, windows):
-                if win32gui.IsWindowVisible(hwnd):
-                    title = win32gui.GetWindowText(hwnd)
-                    if "待办事项提醒" in title:
-                        windows.append(hwnd)
-                return True
-
-            windows = []
-            win32gui.EnumWindows(callback, windows)
-            
+            # 查找并激活已存在的窗口
+            windows = find_running_window()
             if windows:
-                # 找到已运行的实例
                 hwnd = windows[0]
                 try:
-                    # 尝试激活窗口
-                    if win32gui.IsIconic(hwnd):  # 如果窗口最小化
+                    # 如果窗口最小化，先恢复
+                    if win32gui.IsIconic(hwnd):
                         win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
-                    win32gui.SetForegroundWindow(hwnd)
+                    
+                    # 获取窗口线程ID和进程ID
+                    thread_id, process_id = win32process.GetWindowThreadProcessId(hwnd)
+                    
+                    # 获取当前线程ID
+                    current_thread = win32api.GetCurrentThreadId()
+                    
+                    # 如果线程ID不同，才需要附加线程输入
+                    if thread_id != current_thread:
+                        # 临时附加线程输入
+                        win32process.AttachThreadInput(current_thread, thread_id, True)
+                        try:
+                            # 激活窗口
+                            win32gui.SetForegroundWindow(hwnd)
+                            # 将窗口提升到最前
+                            win32gui.BringWindowToTop(hwnd)
+                            # 给窗口一些时间来响应
+                            time.sleep(0.1)
+                        finally:
+                            # 确保分离线程输入
+                            win32process.AttachThreadInput(current_thread, thread_id, False)
+                    else:
+                        # 如果线程ID相同，直接激活窗口
+                        win32gui.SetForegroundWindow(hwnd)
+                        win32gui.BringWindowToTop(hwnd)
                 except Exception as e:
                     print(f"激活窗口时出错: {str(e)}")
         except Exception as e:
@@ -65,17 +88,4 @@ def is_already_running():
         
     except Exception as e:
         print(f"检查程序运行状态时出错: {str(e)}")
-        return False
-
-def find_running_window():
-    """查找已经运行的程序窗口"""
-    def callback(hwnd, windows):
-        if win32gui.IsWindowVisible(hwnd):
-            title = win32gui.GetWindowText(hwnd)
-            if "待办事项提醒" in title:
-                windows.append(hwnd)
-        return True
-
-    windows = []
-    win32gui.EnumWindows(callback, windows)
-    return windows 
+        return False 
