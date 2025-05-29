@@ -1,0 +1,36 @@
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    filevers=(1, 3, 0, 0), 
+    prodvers=(1, 3, 0, 0),
+    mask=0x3f,
+    flags=0x0,
+    OS=0x40004,                   # 操作系统标识：Windows NT
+    fileType=0x1,                 # 文件类型：应用程序
+    subtype=0x0,
+    date=(0, 0)
+  ),
+  kids=[
+    StringFileInfo(
+      [
+        StringTable(
+          '040904B0',              # 语言和代码页（美式英语 + Unicode）
+          [
+            StringStruct('CompanyName', '100-AI-coded'),  # 公司名称
+            StringStruct('FileDescription', '一个简单便捷的待办列表和提醒软件'),  # 文件描述
+            StringStruct('FileVersion', '1.3.0.0'),       # 文件版本
+            StringStruct('InternalName', 'ToDoRemainder'),      # 内部名称
+            StringStruct('LegalCopyright', '© 2025 100-AI-coded. All rights reserved.'),  # 版权信息
+            StringStruct('OriginalFilename', 'ToDoRemainder.exe'),  # 原始文件名
+            StringStruct('ProductName', 'ToDoRemainder'),  # 产品名称
+            StringStruct('ProductVersion', '1.3.0.0')        # 产品版本
+          ]
+        )
+      ]
+    ),
+    VarFileInfo(
+      [
+        VarStruct('Translation', [0, 1200])  # 语言 ID 和代码页
+      ]
+    )
+  ]
+)

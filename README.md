@@ -51,10 +51,13 @@ pip install -r requirements.txt
 1. 运行程序：
 ```bash
 python main.py
+# 打包独立exe文件
+pyinstaller --noconfirm --onefile --windowed --icon=ui/todo.ico --version-file=version-info.txt --clean --add-data "ui/todo.ico;ui/" main.py
 ```
 
 2. 基本操作：
    - 点击"添加新待办"或使用快捷键 `Alt+N` 添加待办事项
+   - 使用快捷键Del删除选定待办事项
    - 双击待办事项或点击"编辑"按钮修改待办事项
    - 点击"标记完成"将事项标记为已完成
    - 点击"显示已完成事项"切换显示状态
